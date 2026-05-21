@@ -1,14 +1,14 @@
 import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCQlz_FhXdpkejlOwiz0CKeLs62B-uj2Zo",
-  authDomain: "english-word-trainer-22c75.firebaseapp.com",
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
   projectId: "english-word-trainer-22c75",
-  storageBucket: "english-word-trainer-22c75.firebasestorage.app",
-  messagingSenderId: "444579658966",
-  appId: "1:444579658966:web:a5d2314775f45c9c925d77"
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
-
-export default app;
+export const db = getFirestore(app);
