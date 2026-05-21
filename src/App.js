@@ -1,4 +1,12 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
+import { db } from "./firebase";
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  orderBy,
+  query
+} from "firebase/firestore";
 
 export default function App() {
   const [words, setWords] = useState([]);
@@ -6,7 +14,6 @@ export default function App() {
   const [translation, setTranslation] = useState("");
   const [delay, setDelay] = useState(2);
   const [isPlaying, setIsPlaying] = useState(false);
-  const timerRef = useRef(null);
 
   const speak = (text) => {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -14,10 +21,32 @@ export default function App() {
     speechSynthesis.speak(utterance);
   };
 
-  const addWord = () => {
+  // ЗАГРУЗКА СЛОВ ИЗ FIRESTORE
+  useEffect(() => {
+    const q = query(collection(db, "words"), orderBy("createdAt", "desc"));
+
+    const unsub = onSnapshot(q, (snapshot) => {
+      setWords(
+        snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+      );
+    });
+
+    return () => unsub();
+  }, []);
+
+  // ДОБАВЛЕНИЕ СЛОВА В FIRESTORE
+  const addWord = async () => {
     if (!english || !translation) return;
-    if (words.length >= 20) return;
-    setWords([...words, { english, translation }]);
+
+    await addDoc(collection(db, "words"), {
+      english,
+      translation,
+      createdAt: Date.now()
+    });
+
     setEnglish("");
     setTranslation("");
   };
@@ -28,23 +57,17 @@ export default function App() {
 
     for (let word of words) {
       speak(word.english);
-
-      await new Promise((resolve) =>
-        setTimeout(resolve, delay * 1000)
-      );
+      await new Promise((r) => setTimeout(r, delay * 1000));
 
       speak(word.translation);
-
-      await new Promise((resolve) =>
-        setTimeout(resolve, 1500)
-      );
+      await new Promise((r) => setTimeout(r, 1500));
     }
 
     setIsPlaying(false);
   };
 
   return (
-    <div style={{ maxWidth: "500px", margin: "40px auto", fontFamily: "Arial" }}>
+    <div style={{ maxWidth: 500, margin: "40px auto", fontFamily: "Arial" }}>
       <h2>English Word Trainer</h2>
 
       <input
@@ -63,10 +86,11 @@ export default function App() {
 
       <button onClick={addWord}>Добавить слово</button>
 
-      <p>Слов: {words.length}/20</p>
+      <p>Слов: {words.length}</p>
 
       <label>Интервал: {delay} сек</label>
       <br />
+
       <input
         type="range"
         min="0.5"
@@ -83,8 +107,8 @@ export default function App() {
       </button>
 
       <ul>
-        {words.map((word, index) => (
-          <li key={index}>
+        {words.map((word) => (
+          <li key={word.id}>
             {word.english} — {word.translation}
           </li>
         ))}
